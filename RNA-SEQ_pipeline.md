@@ -5,10 +5,9 @@ adequá-la a análise de acordo com o resultado esperado. Portanto, não existe 
 
 Com isso, escrevi essa pipeline, não com o intuito de ser a melhor ou a única a ser usado em uma análise de Rna-seq, mas para ser vir como material de apoio para a contrução de uma pipeline especifica para uma análise especifica.
 
-Neste projeto descrevo diferentes parâmetros e opções para execução de programas necessários à análise de Rna-Seq, além de incluir informações e opniões,
-que possam facilitar a escolha da melhor opção que se adque à análise em questão. 
+Neste projeto descrevo diferentes parâmetros e opções para execução de programas necessários à análise de Rna-Seq, além de incluir informações e opniões, que possam facilitar na hora de escolha a opção que melhor se adque à análise em questão. 
 
-Esta pipeline foi desenvolvida em um ambiente conda, e os programas usados estão descritos na seção [Material complementar](#material=complementar)
+Esta pipeline foi desenvolvida em um ambiente conda, e os programas usados estão descritos na seção [Material complementar](#material-complementar)
 
 Informações de hardware:  
 OS: windowns10 home versão 21H1 / wsl-2 - Ubuntu
