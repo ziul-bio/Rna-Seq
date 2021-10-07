@@ -11,7 +11,7 @@ Possui graduação em Ciências Biológicas e Mestrado em Ciências pelo Departa
 Atuou como Técnico de Laboratório (Trainne) e Pesquisador (Mestrando) no Centro de Pesquisas em Virologia (USP).
 Recentemente, atuou como Analista de Laboratório no controle de qualidade biológico, realizando testes de controle de qualidade de vacinas virais.
 
-**Experiência em:** Biologia Celular e Molecular, Virologia, Python, R, Análise de Dados e bioinformática.
+**Experiência em:** Biologia Celular e Molecular, Virologia, Análise de Dados, bioinformática, Python, R, bash.
 
 **Links:**
 
@@ -25,5 +25,15 @@ adequá-la a análise de acordo com o resultado esperado. Portanto, não existe 
 
 Com isso, descrevi essa pipeline, não com o intuito de ser a melhor ou a única a ser usado em uma análise de Rna-seq, mas para ser vir como material de apoio para a contrução de uma pipeline especifica para uma análise especifica.
 
-Neste projeto descrevo diferentes parâmetros e opções para execução de programas necessários à análise de Rna-Seq, além de incluir informações e opniões,
-que possam facilitar a escolha da melhor opção que se adque à análise em questão. 
+Neste projeto descrevo diferentes parâmetros e opções para execução de programas necessários à análise de Rna-Seq, além de incluir informações e opniões, que possam facilitar na hora de escolher a opção que melhor se adque à análise em questão.
+
+Nesta análise serão usados programas como:  
+
+* Fastqc e Multiqc  
+* HISAT2  
+* kallisto  
+* RSeQC  
+* Samtools  
+* FeatureCounts  
+* DESeq2  
+
