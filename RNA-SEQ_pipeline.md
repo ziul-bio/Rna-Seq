@@ -9,7 +9,7 @@ Neste projeto descrevo diferentes parâmetros e opções para execução de prog
 
 Esta pipeline foi desenvolvida em um ambiente conda e as informações sobre hardware e os programas usados estão na seção [Material complementar](#material-complementar)
 
-![Rna-Seq pipeline](rna-seq_pipeline.jpeg)
+![Rna-Seq pipeline](arquivos/rna-seq_pipeline.jpeg)
 
 
 # Raw Data e SRA toolkit
@@ -329,7 +329,7 @@ hisat2 --dta -p 5 -t -x ../reference/genome.fa -1 ../sample_R2_1.fq -2 ../sample
 ```
 
 Output do mapeamento com hisat2: 
-![output do mapeamento com hisat2](output_alignment.png)
+![output do mapeamento com hisat2](arquivos/output_alignment.png)
 
 [Informações sobre a interpretação dos resultados](https://www.biostars.org/p/395017/)  
 [Mais informações sobre hisat](http://daehwankimlab.github.io/hisat2/manual/)
@@ -459,7 +459,7 @@ samtools view -H sample.bam | less
 ```
 
 Se o arquivo estiver ordenado na sequencia genômica, um output similar ao descrito abaixo será mostrado.
-![Cabeçalho do arquivo BAM](bam_header.png)
+![Cabeçalho do arquivo BAM](arquivos/bam_header.png)
 SO: indica que o arquivo está ordenado por coordenadas(SO = Sort Order).
 
 ### samtools stats
@@ -475,7 +475,7 @@ sample="sample1.bam sample2.bam sample3.bam"; for i in $sample; do samtools flag
 for i in $(ls); do samtools flagstat $i | tee -a flagstat.txt; done
 ```
 
-![output do flagstat](results_flagstat.png)
+![output do flagstat](arquivos/results_flagstat.png)
 
 # FeatureCounts
 
@@ -547,7 +547,7 @@ featureCounts -T 5 -p -s 2 -a ~/bioinfo/rna_seq/1-raw_data/reference_genome/Mus_
 ```
 
 Output featureCouns:
-![output featureCounts](featurecount_S1_teste.png)
+![output featureCounts](arquivos/featurecount_S1_teste.png)
 
 
 ## CUT, para Excluir colunas e organizar o featureCounts.txt
@@ -618,7 +618,7 @@ Os outros 99.28%(1 - 0.0072 = 0.9928) das reads, a grande maioria é explicada p
 
 Se compararmos a tabela a baixo, corresponde a FR(forward) ou stranded 
 
-![Resumo dos parâmetros](summary_infer_experiment.png)
+![Resumo dos parâmetros](arquivos/summary_infer_experiment.png)
 
 ## Lista separada por vírgula em hisat2 para arquivos fastqc com multiplas lanes
 
