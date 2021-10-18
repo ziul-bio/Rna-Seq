@@ -7,13 +7,7 @@ Com isso, escrevi essa pipeline, não com o intuito de ser a melhor ou a única 
 
 Neste projeto descrevo diferentes parâmetros e opções para execução de programas necessários à análise de Rna-Seq, além de incluir informações e opniões, que possam facilitar na hora de escolha a opção que melhor se adque à análise em questão. 
 
-Esta pipeline foi desenvolvida em um ambiente conda, e os programas usados estão descritos na seção [Material complementar](#material-complementar)
-
-Informações de hardware:  
-OS: windowns10 home versão 21H1 / wsl-2 - Ubuntu
-RAM: 16Gb  
-SSD: 526Gb  
-Processador: 11th Gen Intel(R) Core(TM) i7-1165G7  
+Esta pipeline foi desenvolvida em um ambiente conda e as informações sobre hardware e os programas usados estão na seção [Material complementar](#material-complementar)
 
 ![Rna-Seq pipeline](rna-seq_pipeline.jpeg)
 
@@ -639,6 +633,13 @@ que são específicos da pista (por exemplo, L001 = Lane1, L002 = Lane2, L003 = 
 Nota 1: As células de fluxo HiSeq podem ter 8 lanes e produzirão tantos arquivos se a mesma amostra / pool for executado em todas as lanes.
 Nota 2: Alguns sequenciadores Illumina têm lanes opticamente separadas, mas executam o mesmo pool em toda a célula de fluxo (NextSeq, NovaSeq sem kit XP).
 
+## Informações de hardware:
+
+OS: windowns10 home versão 21H1 / wsl-2 - Ubuntu  
+RAM: 16Gb  
+SSD: 526Gb  
+Processador: 11th Gen Intel(R) Core(TM) i7-1165G7  
+
 
 ## Configuração do ambiente conda
 
@@ -653,7 +654,7 @@ Nota 2: Alguns sequenciadores Illumina têm lanes opticamente separadas, mas exe
 [subread-featureCounts](https://anaconda.org/bioconda/subread)  
 
 
-# Referências:
+# Referências da documentação:
 https://www.ncbi.nlm.nih.gov/sra/docs/sradownload/  
 https://trace.ncbi.nlm.nih.gov/Traces/sra/sra.cgi?view=toolkit_doc  
 https://www.bioinformatics.babraham.ac.uk/projects/fastqc/  
