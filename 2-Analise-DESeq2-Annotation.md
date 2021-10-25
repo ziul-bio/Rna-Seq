@@ -319,7 +319,7 @@ summary(res)
     ## [2] see 'independentFiltering' argument of ?results
 
 É obseravado acina um total de 10044 genes de um total de 15972, estão
-diferencialmente espressos, quando levamos em consideração um “p-value”
+diferencialmente expressos, quando levamos em consideração um “p-value”
 de 0,1, valor default.
 
 Sendo estes:
@@ -374,7 +374,7 @@ summary(res)
     ## [2] see 'independentFiltering' argument of ?results
 
 É obseravado acina um total de 9112 genes de um total de 15972, estão
-diferencialmente espressos, quando levamos em consideração um “p-value”
+diferencialmente expressos, quando levamos em consideração um “p-value”
 de 0,1.
 
 Sendo estes:
@@ -451,7 +451,7 @@ change(LFC) positivo. Ou seja estão up-regulados.
 
 Enquanto 4194 genes (26%) estão down-regulados.
 
-É obseravado acina um total de 8489 genes diferencialmente espressos,
+É obseravado acina um total de 8489 genes diferencialmente expressos,
 quando considerado um “p-value ajustado” de 0,05.
 
 Resumo:
@@ -895,7 +895,7 @@ pheatmap(mat, scale="row", cluster_rows=TRUE, show_rownames=TRUE,
 
 No volcano plot conseguimos analisar os genes expressão dos genes, sendo
 em verde os genes que demostram um ‘logfoldchange’ significativo,
-indicando genes diferencialmente espressos.
+indicando genes diferencialmente expressos.
 
 ``` r
 #png("volcano-DE.png", 1000, 700, pointsize=20)
