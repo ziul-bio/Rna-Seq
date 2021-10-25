@@ -1,0 +1,979 @@
+---
+title: "Análise de Expressão diferencial de RNA-Seq com DESeq2"
+Autor: Luiz Carlos Vieira
+date: "25/09/2021"
+---
+
+DESeq2, é um método para análise diferencial de dados de contagem, usando estimativa de encolhimento para 
+dispersões e alterações de log fold chang para melhorar a estabilidade e interpretabilidade das estimativas
+de dispersão dos dados (Love, M.I.., 2014).
+
+# Descrição
+Neste notebook, descrevo uma análise dos dados de contagem de RNA-seq, com o intuito de detectar genes 
+diferencialmente expressos. Os dados de contagem são apresentados em uma matiz com o número de fragmentos
+de sequência contados para cada gene.
+
+Esta matriz foi gerada pelo programa featureCounts, do qual realizou a contagem dos fragmentos alinhados 
+com o Hisat2.
+
+Os dados brutos foram retirados de um artigo publicado na cellpress.  
+Título: "Defining lncRNAs Correlated with CHO Cell Growth and IgG Productivity by RNA-Seq"   
+Autor Davide Vito.   
+[Link]('https://www.sciencedirect.com/science/article/pii/S2589004219305309')
+
+## Importando as bibliotecas
+```{r, message=FALSE}
+
+# Análise de expressão diferencial
+library('DESeq2')
+
+# Anotação gênica
+library("AnnotationDbi")
+library("org.Mm.eg.db")  #db de camundongo
+
+# Manipulação e visualização de dados
+library("dplyr")
+library('writexl')
+library('ggplot2')
+library("pheatmap")
+library("RColorBrewer")
+
+# Padronizando tamanho de imagens
+options(repr.plot.width = 16, repr.plot.height = 12)
+```
+
+# Carregando e pré-processando os dados a serem analizados:
+Como dados de entrada para o DESeq2, são necessários uma matriz de contagem (countData, proveniente do 
+featureCounts) e uma tabela com informações sobre as amostras (coldata, com as colunas sample_id e as 
+condições do experimento).
+
+O pacote DESeq2 espera que os dados das "counts reads" não estejam normalizado, ou seja, "raw counts".
+Por exemplo, a matriz de valores inteiros obtida a partir de RNA-seq ou de outro experimento de sequenciamento.
+
+Os valores na matriz devem ser contagens não normalizadas ou contagens estimadas de leituras de sequenciamento
+(for single-end RNA-seq) ou fragmentos (for paired-end RNA-seq). 
+
+Esses valores de contagem permitem avaliar a precisão da medição corretamente. O modelo DESeq2 corrige 
+internamente o tamanho da biblioteca, portanto valores transformados ou normalizados, não devem ser usados 
+como dados de entrada.
+
+```{r}
+# Carregando a tabela com as counts por gene
+countData <- read.table("featureCounts.txt", header=TRUE, row.names=1)
+```
+
+
+## Excluindo as colunas (chr, start, end, strand, length)
+```{r}
+countData <- countData[,6:ncol(countData)]
+head(countData)
+```
+
+
+## Renomeando as colunas:
+```{r}
+colnames(countData) <- c('SRR10493810', 'SRR10493811', 'SRR10493818', 'SRR10493819')
+head(countData)
+```
+
+
+## Convertendo o dataframe counsts em matriz
+```{r}
+countData <- as.matrix(countData)
+head(countData)
+```
+
+
+## Carregando a tabela coldata 
+Esta tabela possui informações como: sample_id e condições testadas (day4 vs day7).
+Obs: Os nomes das colunas que representam as amostras em counts devem corresponder as linhas sample_id da 
+tabela coldata.
+```{r}
+coldata <- read.table("coldata.txt", header=TRUE, row.names=1, sep ='\t')
+
+# Transformando a coluna "condition" em "factor" com dois levels (day4 e day7)
+coldata$condition <- as.factor(coldata$condition)
+head(coldata)
+```
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+#                                       Análise dos dados com DESeq2
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+
+
+## Passando os dados de countData, coldata e design para a função DESeqDataSetFromMatrix()
+
+countData <- tabela com as contagens das reads (counts);
+coldata <- tabela com as condições para análise;
+design <- ~ (indica comparação) + coluna em coldata, que indique as condições(fatores) dos quais se deseja avaliar. 
+Exemplo: ~ condition (aqui são conparados os fatores, day4 vs day7, mas poderia ser controle vs tratado).
+
+```{r}
+dds <- DESeqDataSetFromMatrix(countData=countData, colData=coldata, design= ~condition)
+dds
+
+```
+
+
+## Realizando um filtro para as colunas que tenham a soma das readcounts >= 10.
+Antes da análise de expressão diferencial, é benéfico omitir genes que têm pouca ou nenhuma chance de serem 
+detectados como expressos diferencialmente. Isso aumentará o poder de detectar genes expressos diferencialmente.
+DESeq2 não remove fisicamente nenhum gene da matriz de contagens original e, portanto, todos os genes estarão 
+presentes em sua tabela de resultados.
+
+```{r}
+filtro <- rowSums(counts(dds)) >= 10
+dds <- dds[filtro,]
+```
+
+Há duas razões que tornam o filtro útil: 
+1- Reduzimos o tamanho da memória do objeto dds, ao remover as linhas com poucas reads.
+2- Aumentamos a velocidade das funções de transformação e teste do DESeq2.
+
+
+## Observação sobre os níveis de fatores
+
+Por padrão, R escolherá um nível de referência para fatores com base na ordem alfabética. Então, se você   
+não informar à função DESeq() quais os níveis se deseja comparar (por exemplo, qual é o nível que representa
+o grupo de controle e qual o tratado), as comparações serão baseadas na ordem alfabética dos níveis. 
+Sendo o último vs o primeiro.
+
+Por isso antes de executar DESeq2, é essencial escolher os níveis de referência apropriados para cada fator.
+Isso pode ser feito pela função relevel() em R. O nível de referência é o nível de linha de base de um fator
+que forma a base de comparações significativas. Em um experimento de tipo selvagem vs. mutante,
+"tipo selvagem" é o nível de referência. Em tratados vs. não tratados, o nível de referência é o não tratado.
+
+ **first level of the factor will be taken as the denominator
+
+[link level info](https://rstudio-pubs-static.s3.amazonaws.com/329027_593046fb6d7a427da6b2c538caf601e1.html)
+
+
+### Solução 1 para o nível de referência: Definir explicitamente os níveis dos fatores. 
+```{r}
+# Usando o relevel, para especificar o level de referência:
+dds$condition <- relevel(dds$condition, ref = "day4")
+```
+
+
+## Análise da expressão diferenciada, correndo o deseq2
+```{r}
+#ddsDE, será a variável onde o objeto criado pela função DESeq será armazenado.
+ddsDE <- DESeq(dds)
+ddsDE
+```
+
+
+### Conferindo se a análise do DESeq foi realizada sobre as condições desejadas:
+```{r}
+resultsNames(ddsDE)
+```
+
+
+### Solução 2 para o nível de referência: usar o parâmetro contraste para definir os níveis dos fatores. 
+Se a fórmula de design for multifatorial ou, a variável na fórmula de design tiver mais de 2 níveis. 
+É preciso informar os níveis de comparação ao parâmetro contraste, que leva um vetor de caracteres de 
+três elementos:
+
+1 - nome do fator de interesse, 
+2 - o numerador (ou seja, comparador) e 
+3 - o denominador (ou seja, controle).
+
+Exemplo: Extariondo resultados de log2 fold change em relação à tratado / Controle.
+res <- results(ddsDE, contrast=c("condition","tratado","controle"))
+```{r}
+res <- results(ddsDE, contrast=c("condition","day7","day4"))
+```
+
+
+# Resultados do DESeq2
+As tabelas de resultados são geradas usando a função results(), que gera uma tabela de resultados com 
+"log2 fold changes", "p-values" e "p-values ajustados" etc. 
+
+Executando results()
+```{r}
+res <- results(ddsDE)
+```
+
+
+## Resumo dos resultados
+```{r}
+# Número total de genes
+sum(!is.na(res$pvalue))
+
+# Número de genes diferencialmente expressos
+sum(res$pvalue < 0.1, na.rm=TRUE)
+
+# Descrição resumida dos resultados
+summary(res)
+```
+
+É obseravado acina um total de 10044 genes de um total de 15972, estão diferencialmente espressos, quando 
+levamos em consideração um "p-value" de 0,1, valor default.
+
+Sendo estes:
+
+4649, 29% ---> Up regulados
+4631, 29% ---> Down regulados
+
+Para contornar essa situação o deseq2 usa o método de Benjamini-Hochberg para corrigir 'p-valeu' para um 
+valor de 'p-value ajustado' levando em consideração taxa de falsas descobertas (FDR)
+
+
+## "p-value" vs "p-value ajustado"
+
+### Falso positivos
+Suponhamos que a nossa hipótese nula seja verdadeira:
+Pela definição do "p-value", esperamos que até 5% dos genes analisados(15972) tenham um "p-value" abaixo de 
+0,05, esse número seria igual a 789 genes. 
+
+Se considerarmos apenas a lista de genes com um "p-value" abaixo de 0,05, dos quais estariam diferencialmente
+expressos, esta lista deve conter até (798/9112 = 0,0875), ou seja, 8,75% de falsos positivos.
+
+
+### Número de genes diferencialmente expressos considerando o "p-value" < 0.05
+```{r}
+# Número total de genes
+sum(!is.na(res$pvalue))
+
+# Número de genes com um 'p-value' nemor que 0,05
+sum(res$pvalue < 0.05, na.rm=TRUE)
+
+summary(res)
+```
+
+É obseravado acina um total de 9112 genes de um total de 15972, estão diferencialmente espressos, quando 
+levamos em consideração um "p-value" de 0,1.
+
+Sendo estes:
+
+4649, 29% ---> Up regulados
+4631, 29% ---> Down regulados
+
+Para contornar essa situação o deseq2 usa o método de Benjamini-Hochberg para corrigir 'p-valeu' para um 
+valor de 'p-value ajustado' levando em consideração taxa de falsas descobertas (FDR)
+
+
+## Método de Benjamini-Hochberg (BH)
+
+Por padrão o DESeq2 usa o método de ajuste do "p-value" de Benjamini-Hochberg (BH). Este método diminui a taxa
+de descoberta de falsos(FDR). Este controle sobre a taxa de FDR é uma maneira de identificar tantos recursos 
+significativos quanto possível, a uma proporção relativamente baixa de falsos positivos.
+
+Esses valores, chamados de "p-value" ajustados por BH, são fornecidos na coluna padj do objeto res.
+
+Obs: a função results() executa automaticamente a filtragem independente com base na média de contagens 
+NORMALIZADA para cada gene, otimizando o número de genes que terão um "p-value" ajustado abaixo de um 
+determinado corte de FDR, alfa. 
+
+
+### Ajustando os parâmetros da função results() para "p-valeu ajustado" < 0.05 e lfcThreshold = 0.5
+Por padrão, o argumento alpha é definido como 0.1. Se o corte do valor p ajustado for um valor diferente de 
+0,1, alfa deve ser definido:
+
+```{r}
+res05 <- results(ddsDE, alpha = 0.05, contrast=c("condition","day7","day4"), pAdjustMethod = "BH")
+
+# Informações sobre os argumentos de results()
+?results
+```
+
+
+## Resumo dos resultados ajustados
+```{r}
+# Número total de genes
+sum(!is.na(res05$padj))
+
+# Número de genes com um 'p-value ajustado' nemor que 0,05
+sum(res05$padj < 0.05, na.rm=TRUE)
+
+summary(res05)
+```
+
+Os resultados acima mostram que 4295 genes (27%) tiveram um log fold change(LFC) positivo. Ou seja estão 
+up-regulados. 
+
+Enquanto 4194 genes (26%) estão down-regulados. 
+
+É obseravado acina um total de 8489 genes diferencialmente espressos, quando considerado um "p-value ajustado"
+de 0,05.
+
+Resumo:
+
+4295, 27% ---> Up regulados
+4194, 26% ---> Down regulados
+
+
+### Número de possíveis falsos positivos
+```{r}
+sum(res$pvalue < 0.05, na.rm=TRUE) - sum(res05$padj < 0.05, na.rm=TRUE)
+```
+É possível observar uma diferença de 769 genes que poderiam ser considerados positivos.O método de BH ajusta
+o "p-value" considerando a FDR.
+
+
+### Informações sobre as colunas de resultados
+Informações sobre quais variáveis e testes foram usados podem ser encontradas chamando a função mcols no 
+objeto de resultados.
+```{r}
+mcols(res05)$description
+```
+
+
+#  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+#                             Visualização dos dados de Expressão Diferenciada com DESeq2
+#  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+
+Para testar a expressão diferencial, usamos as contagens brutas. No entanto, para outras análises downstream -
+por exemplo, para a visualização ou agrupamento - pode ser útil trabalhar com versões transformadas dos dados
+de contagem em um escala de log2.
+
+## Dados de counts não normalizados
+```{r}
+# O Histograma abaixo mostra a distribuição das counts não normalizados.
+hist(countData, xlab = 'ReadsCounts não Normalizada', main= 'Dados não transformados')
+```
+
+## rlogTransformation
+
+Esta função transforma os dados de contagem para a escala log2, de uma forma que minimiza as diferenças entre  
+as amostras com contagens pequenas e as normaliza em relação ao tamanho da biblioteca.
+
+Quando blind = FALSO, o projeto experimental é usado apenas pelo VST e rlog tranformation no cálculo da 
+estimativa de dispersão gênica, a fim de ajustar a linha de tendência através das dispersões sobre a média.
+
+sendo assim, apenas a linha de tendência é usada pelas transformações, e não as estimativas de dispersão gênicas.
+Portanto, para visualização, agrupamento ou aplicações de aprendizado de máquina, se tende a recomendar 
+blind = FALSE.
+
+```{r}
+# "Regularized log transformation" para os plots PCAs, clustering e heatmaps, 
+rld <- rlog(ddsDE)
+
+# As informações em um objeto SummarizedExperiment(ex: rld) podem ser acessadas com funçõe assay() que 
+# retorma uma matriz com os dados reais, ou seja, as contagens de reads.
+assay_rld <-assay(rld)
+
+head(assay_rld)
+```
+
+
+# O Histograma abaixo mostra a distribuição das counts normalizados entre 5 e 15.
+```{r}
+hist(assay_rld, xlab = 'ReadsCounts Normalizada', main= 'Dados transformados' )
+```
+
+
+## Distribuição dos dados transformados
+```{r}
+x <- assay_rld
+corRainbow = rainbow(dim(x)[2])
+
+plot(density(x[,1]), col = corRainbow[1], lwd=2,
+     xlab="valores de Expressão", ylab="Densidade", main= "Distribuição dos dados transformados",
+     ylim=c(0, max(density(x[,1])$y)+.02 ) )
+  
+for( i in 2:dim(x)[2] )
+lines(density(x[,i]), col=corRainbow[i], lwd=2)
+legend("topright", cex=1.1, colnames(x), lty=rep(1,dim(x)[2]), col=corRainbow)
+```
+
+
+## Distribuição das read counts entre as replicatas.
+```{r}
+
+par(mfrow=c(1,2))
+plot(countData[,1:2], xlab='day4_rep1', ylab='day4_rep2', pch=16, cex=0.5)
+plot(countData[,3:4], xlab='day7_rep1', ylab='day7_rep2', pch=16, cex=0.5)
+
+mtext("Comparando as distribuição das replicatas", line = -1.5, cex = 1.5, outer = TRUE)
+
+```
+
+Os dados acima revelam uma distribuição homogênea entre as reads das amostras. Qualificando as replicatas.
+
+
+## Estimativa da Dispersão
+Para um gene ter sua expressão significativa, não depende apenas de seu LFC, mas também de sua variabilidade 
+dentro do grupo.
+
+O DESeq2 quantifica esta dispersão que pode ser entendida como o coeficiente de variação ao quadrado.
+Por exemplo: um valor de dispersão de 0,01 significa que a expressão do gene tende a diferir normalmente em 
+$\sqrt{0,01} = 10\%$ entre as amostras do mesmo grupo.
+
+As estimativas de dispersão estão inversamente relacionadas à média e diretamente relacionadas à variância. 
+Com base nessa relação, a dispersão de um gene é considerada alta quando a média das 'readcounts' são pequenas
+e uma dispersão baixa quando a média das 'readCounts' são maiores.
+
+```{r, fig.height=7, fig.width=8}    
+plotDispEsts(ddsDE, main="Estimativa de Dispersão")
+```
+
+No gráfico de dispersão espera-se a dispersão dos genes analisados se encontrem próximo a linha de dispersão 
+esperada.
+
+* Os pontos pretos são as estimativas de dispersão para cada gene, obtidas considerando as informações de cada
+gene separadamente. (obs: A menos que se tenha muitas amostras, esses valores flutuam fortemente em torno de 
+seus valores reais.)
+
+* A linha vermelha representa a estimativa do valor de dispersão esperado para cada genes, que mostra a 
+dependência das dispersões em relação à média.
+
+* Os pontos azuis representam as estimativas finais, que são então usadas no teste de hipótese. 
+
+* Os círculos azuis acima da “nuvem” principal, são genes que possuem altas estimativas de dispersão 
+(outliers da dispersão).
+
+
+## PCA 
+Um gráfico de PCA mostra grupos de amostras com base em sua similaridade. O PCA não descarta nenhuma amostra 
+ou característica (variáveis). Em vez disso, reduz o número esmagador de dimensões ao construir os componentes
+principais (PCs).
+
+```{r}
+pcaData <- plotPCA(rld, intgroup="condition", returnData=TRUE)
+
+percentVar <- round(100 * attr(pcaData, "percentVar"))
+
+ggplot(pcaData, aes(PC1, PC2, color=condition)) +
+  geom_point(size=2) +
+  ggtitle('Observação da variação entre as amostras do dia 4 e dia 7') + 
+  theme(plot.title = element_text(hjust = 0.5)) +
+  
+  xlab(paste0("PC1: ",percentVar[1],"% variação")) +
+  ylab(paste0("PC2: ",percentVar[2],"% variaçao")) + 
+  coord_fixed()
+
+```
+
+
+## PCA 2
+```{r}
+# Plot PCA by column variable
+plotPCA(rld, intgroup = "condition", ntop = 500) +
+  theme_bw() + # remove default ggplot2 theme
+  geom_point(size = 3) + # Increase point size
+  scale_y_continuous(limits = c(-5, 5)) + # change limits to fix figure dimensions
+  ggtitle(label = "Principal Component Analysis (PCA)", 
+          subtitle = "Top 500 most variable genes")
+```
+
+
+## Distância entre as amostras
+Um heatmap da matriz de distância, nos dá uma visão geral sobre as semelhanças e dissimilaridades entre as 
+amostras.
+
+Este clustering de amostra é realizado ao aplicarmos a função dist() à transposta (t) da matriz de contagem 
+transformada (rld) para obter distâncias amostra a amostra.
+```{r}
+sampleDists <- dist(t(assay_rld))
+
+sampleDistMatrix <- as.matrix(sampleDists)
+rownames(sampleDistMatrix) <- colnames(assay_rld)
+colnames(sampleDistMatrix) <- colnames(assay_rld)
+
+corBlues <- colorRampPalette(rev(brewer.pal(9, "Blues")))(255)
+
+pheatmap(sampleDistMatrix,
+         clustering_distance_rows=sampleDists,
+         clustering_distance_cols=sampleDists,
+         col=corBlues)
+```
+
+
+## Analisando os valores de p-value ajustado
+
+```{r, }
+hist(res05$padj, breaks=50, col="gray", main =('Histrograma'),
+     xlab = 'p-value ajustado', 
+     ylab = 'Frequência')
+```
+
+O gráfico acima, revelam uma frequência alta para as amostras com um valor de 'p-value' ajustado concentrado 
+em valores ao redor de 0,05. Contribuindo para a significancia dos resultados. 
+
+
+## MA-Plot de LFCs vs contagens normalizadas
+"MA-plot" ("M" para menos, porque uma razão de log é igual a log menos log, e “A” para média) é um gráfico de
+dispersão de LFC (log2 fold change, no eixo y) versus a média de contagens normalizadas (no eixo x).
+
+A função plotMA mostra o LFC atribuíveis a uma determinada variável sobre a média das contagens normalizadas 
+para todas as amostras no DESeqDataSet.
+```{r}
+plotMA(res05, ylim=c(-5,5), main='Expressão diferenciada (day4 vs day7)', 
+       xlab='Média das counts Normalizada',
+       )
+```
+Cada ponto indica um gene, em azul temos os genes que estão diferencialmente expressos.
+sendo os acima da linha de marco zero ur-regulados e os abaixo down-regulados.
+
+Obs: Os pontos que caem para fora da janela são plotados como triângulos abertos apontando para cima ou para baixo.
+
+
+## Normalizando (shrink) os valores de log2 fold changes
+
+Para gerar estimativas mais precisas de log2 foldchange, DESeq2 permite a redução das estimativas de LFC 
+para zero quando a informação para um gene é baixa, como poucas readCounts ou altos valores de dispersão.
+
+Esta redução ou normalização de LFC usa informações de todos os genes para gerar estimativas mais precisas. Especificamente, a distribuição das estimativas de LFC para todos os genes é usada para reduzir as estimativas
+de LFC de genes com poucas informações ou alta dispersão para estimativas de LFC mais prováveis (mais baixas).
+
+Para gerar as estimativas de log2 fold change reduzidas, é preciso executar uma etapa adicional em seu objeto 
+de resultados com a função lfcShrink ().
+
+### A função lfcShrink () requer alguns parâmetros
+
+objeto DESeqDataSet - ddsDE
+
+Objeto DESeqResults - res05
+
+Tipo do métodos - "apeglm" e "normal" e "ashr":
+
+O método apeglm requer o uso de coef. Já o método "normal", tanto coef ou contrast podem ser especificado.
+
+Obs: Apenas coef ou contrast pode ser especificado, não ambos. 
+
+coef = O nome( "condition_day7_vs_day4") ou o número(indíce do resulteNames(), referente a condição a ser 
+analizada, neste caso 2). 
+
+
+Consultando o resultsNames
+```{r}
+resultsNames(ddsDE)
+```
+
+
+Caso o design do experimento tenha mais de uma condição, está pode ser acessada pelo seu indíce.
+
+Para confirmar o número do coef: 
+```{r}
+resultsNames(ddsDE)[2]
+```
+
+
+# Executando o lfcShrink()
+
+OBS: A redução do LFC não mudará o número total de genes que são identificados como diferencialmente expressos.
+
+A redução de LFC ajuda na avaliação posterior dos resultados, como na subdivisão de genes significativos com
+base em LFC para uma avaliação posterior.
+
+Além disso, para ferramentas de análise funcional, como GSEA, que exigem valores de LFC como entrada, é 
+necessário fornecer valores reduzidos.
+```{r}
+res05_shrink <- lfcShrink(ddsDE, coef=2, res=res05, type = "apeglm")
+```
+
+
+## MA-Plot de LFCs dos lfc normalizadas
+```{r}
+plotMA(res05_shrink,  ylim=c(-5,5))
+```
+
+Comparando os plotMA dos valores de LFC reduzidos com os valores não reduzidos é possível notar uma abundância
+de pontos para os genes com baixas readcounts, e muitos destes com altos logfoldchanges, havendo uma alta 
+dispersão nos valores de LFC. Apos a redução é possível observar um plot com estimativas mais reduzidas da
+dispesão, o que favorecerá as análises downstream.
+
+
+## Plot counts
+Pode ser útil examinar as contagens de leituras para um único gene entre os grupos. Uma função simples para 
+fazer esse gráfico é plotCounts, que normaliza as contagens pelos fatores de tamanho estimados (ou fatores de 
+normalização, se esses forem usados) e adiciona uma pseudocontagem de 1/2 para permitir a plotagem em escala 
+logarítmica. 
+
+Aqui é representado o gene que teve o menor "p-value" da tabela de resultados(ddsDE). 
+Obs: É possível selecionar o gene por nome ou por índice numérico.
+```{r}
+gene_idx = which.min(res05$padj)
+plotCounts(ddsDE, gene=gene_idx, intgroup="condition")
+```
+
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+#                                   Agrupamento de Genes e Visualização
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+
+## Agrupamento de Genes e Visualização
+
+Nosso propósito é a detecção de genes diferencialmente expressos, e estamos procurando em diferenças entre  
+as amostras, da qual o tratamento experimental proporcionou mudanças no padrão controle .
+
+Com isso, o heatmap tem o propósito de destacar as diferenças entre as amostras. Sendo sendo observada a   
+variação da expressão de cada gene/linha em relação as amostras. 
+
+Sendo 0 a expressão média, enquanto, amarelo ou vermelho representam as diferenças do desvios padrão abaixo  
+e acima dessa média, respectivamente. Um número absoluto mais alto, está relacionado a maior intensidade
+
+
+### Z-score e o agrupamento das amostras 
+
+A padronização de scala por linha (scale='row') centraliza os valores de expresão de cada gene e os    
+transforma em Z-scores, e o heatmap mostra o quanto cada gene se desvia desta média.
+
+Row Z-Score é um método de escalonamento para visualização em mapas de calor que ajuda a aprimorar os   
+agrupamentos de genes com tendências semelhantes na expressão entre as amostras.
+
+O Z-Score é calculado por:
+(Valor da expressão do gene na amostra de interesse) - (Expressão média em todas as amostras) / Desvio padrão
+
+
+### Heatmap da matriz de contagem
+Para explorar uma matriz de contagem, geralmente é instrutivo olhar para ela com um mapa de calor. 
+
+O mapa de calor se torna mais interessante se não olharmos para a expressão absoluta, mas sim para a 
+quantidade que cada gene em uma amostra se desvia(uma anormalidade) da média dos genes em todas as amostras. 
+
+Portanto, os valores de cada gene nas amostras são reunidos em uma média e o heatmap mostra o quanto cada gene
+se desvia desta média. 
+
+
+### Agrupamento de genes pelo heatmap
+```{r, fig.height=10, fig.width=9}
+topVarGenes <- head(order(-rowVars(assay_rld)),50) # - significa decresing
+
+cores_heat<- colorRampPalette(brewer.pal(9, "YlOrRd"))(250)
+       
+mat <- assay_rld[ topVarGenes, ]
+mat <- mat - rowMeans(mat)
+
+pheatmap(mat, scale="row", cluster_rows=TRUE, show_rownames=TRUE, 
+         cluster_cols=TRUE, annotation_col=coldata, col=cores_heat)
+```
+
+
+## Volcano plot
+No volcano plot conseguimos analisar os genes expressão dos genes, sendo em verde os genes que demostram um
+'logfoldchange' significativo, indicando genes diferencialmente espressos. 
+```{r, fig.height=5, fig.width=8}
+#png("volcano-DE.png", 1000, 700, pointsize=20)
+
+mylabel <- c('Significante', "Não-Significante")
+
+plot(res05_shrink$log2FoldChange, -1*log10(res05_shrink$padj), col=ifelse(res05_shrink$padj<0.05, "green", "black"),
+     xlab="log Counts", ylab="log Fold Change", pch=20, main='Volcano Plot de Expressão Diferencial')
+
+legend('topright', mylabel, fill=c('green', 'black'))
+```
+
+
+# --------------------------------------------------------------------------------------------------------- #
+#                                           Anotação Gênica
+# --------------------------------------------------------------------------------------------------------- #
+
+
+## Adicionando uma coluna de significância em res05
+Esta coluna receberá os valores de 'True' e 'False' se representarem dados significativos.
+Serão considerados valores significativos: pajd < 0.05 e logfoldchande > 0.5
+
+OBS*: Lembrando que o resultado é expresso em log de 2, logo, log2 de 0.5 é igual a um log fold chande de 1.
+```{r}
+res05_shrink$significant <- ifelse(res05_shrink$padj< 0.05, "True", "False")
+res05_shrink[which(abs(res05_shrink$log2FoldChange)< 0.5),'significant'] <- "False"
+
+```
+
+
+
+### Transformando a tabela res05 em df, para o merge com a tabela de dados homólogos de camundongos
+
+```{r}
+df_res05_shrink <- as.data.frame(res05_shrink)
+
+# Ordenando a tabela res05 pelo valor de p-value ajustado
+df_res05_shrink <- df_res05[order(df_res05_shrink$padj), ]
+
+df_res05_shrink$Gene.stable.ID <- row.names(df_res05_shrink)
+
+head(df_res05_shrink)
+```
+
+
+## Carregando o dataset com informações de genes de camundongos homologos ás células CHO (chinnese hamister 
+## ovary cells)
+```{r}
+homoBiomart <- as.data.frame(read.delim('mart_export.txt', header = T, sep = '\t'))
+
+head(homoBiomart)
+
+```
+
+
+## Unindo os datasets pela coluna em comun gene.stable.ID
+```{r}
+results <- as.data.frame(merge(df_res05_shrink, homoBiomart, by='Gene.stable.ID'))
+
+head(results)
+
+```
+
+
+## Removendo dados duplicados
+```{r}
+# Removendo dados duplicados da Mouse.gene.stable.ID
+results <- distinct(results, Mouse.gene.stable.ID, .keep_all= TRUE)
+
+head(results)
+```
+
+## Informações sobre os dados de entrada para a query.
+
+keys: É coluna da tabela results que possui a key correspondente no do db que se deseja comparar e extrair 
+os item.
+
+column: Add colunas do db que se deseja adquirir as info. ex: c("GO" , "SYMBOL", "GENENAME" )
+
+keytype: é o tipo de keys que estamos passando, nesse caso foi keytype = "ENSEMBL", pois o id dos meus genes
+possuim essa nomeclatura.
+
+### Consultar as colunas do db
+```{r}
+columns(org.Mm.eg.db)
+```
+
+### Consultar as keys do db
+```{r}
+keytypes(org.Mm.eg.db)
+```
+
+
+## Adicionando as anotações à tabela de resultados
+```{r}
+# Adicionando o símbolo do gene
+results$GeneSymbol <- mapIds(x = org.Mm.eg.db,
+                              keys = results$Mouse.gene.stable.ID,
+                              column = "SYMBOL",
+                              keytype = "ENSEMBL",
+                              multiVals = "first")
+
+# Adicionando a descrição do gene
+results$GeneDescription <- mapIds(org.Mm.eg.db,
+                              keys = results$Mouse.gene.stable.ID,
+                              column = "GENENAME",
+                              keytype = "ENSEMBL",
+                              multiVals = "first")
+
+# Adicionando o ENTREZID
+results$ENTREZID <- mapIds(org.Mm.eg.db,
+                              keys = results$Mouse.gene.stable.ID,
+                              column = "ENTREZID",
+                              keytype = "ENSEMBL",
+                              multiVals = "first")
+
+
+```
+
+
+## Visualizando a tabela com os dados de anotação inseridos
+```{r}
+head(results)
+```
+
+
+## Criando um subset dos genes com expressão significativa
+```{r}
+res_sig = as.data.frame(subset(results, padj< 0.05))
+res_sig <- na.omit(res_sig)
+res_sig = res_sig[order(res_sig$log2FoldChange, decreasing=TRUE),]
+head(res_sig)
+```
+
+
+# Volcano Plot
+Visualização dos gene com um p-value ajustado de <1e-50 e log2FoldChange absoluto > 2.
+```{r, fig.height=6, fig.width=10}
+library(ggrepel)
+
+volcano = ggplot(res_sig, aes(log2FoldChange, -log10(pvalue))) + geom_point(aes(col=significant)) +
+  scale_color_manual(values=c("red", "green"))
+
+volcano + geom_text(data=filter(res_sig, abs(log2FoldChange) > 2 & padj <1e-50), aes(label=GeneSymbol)) +
+  coord_cartesian(clip = "off")
+  
+```
+
+
+## Salvando o arquivo resultados mais anotação
+As colunas GeneSymbol, GeneDescription e ENTREZID, apresentam volores no formato lista.
+Durante a conversão para dataframe, para salvar como csv ou xlsm, o o programa não sabe como lidar com esse 
+formato, salvando o arquivo sem estas iinformações.
+
+Por isso é preciso converter as colunas para o tipo caracter, e aí sim salvar como dataframe no formato desejado.
+```{r}
+# Criando uma cópia do df
+df <- res_sig
+# Aplicando a função as.character as colunas GeneSymbol, GeneDescription e ENTREZID c(10:12)
+alter_cols <- apply(df[ , c(9:11)], 2, as.character)  # retorna um df com as colunas modificadas
+
+# Substituindo as colunas
+df[ , colnames(df) %in% colnames(alter_cols)] <- alter_cols  
+
+# Salvando os resultados do DESeq2
+# write.csv(as.data.frame(df), 'results_DESeq2_shrink.csv')
+# writexl::write_xlsx(as.data.frame(df), 'results_DESeq2_shrink.xlsx')
+# 
+# # Sanvando os resultados DE para e up regulados down regulados 
+# res05_shrink_sig_up <- filter(df, significant == "True" & log2FoldChange > 0)
+# writexl::write_xlsx(as.data.frame(res05_shrink_sig_up), 'results_DESeq2_shrink_genes_up.xlsx')
+# 
+# res05_shrink_sig_down <- filter(df, significant == "True" & log2FoldChange < 0)
+# writexl::write_xlsx(as.data.frame(res05_shrink_sig_down), 'results_DESeq2_shrink_genes_down.xlsx')
+
+
+```
+
+
+#------------------------------------------------------------------------------------------------------------#
+#                                       Opcional a critério do usuário
+#------------------------------------------------------------------------------------------------------------#
+
+
+```{r}
+# Criando coluna de significância
+res05$significant <- ifelse(res05$padj< 0.05, "True", "False")
+res05[which(abs(res05$log2FoldChange)< 0.5),'significant'] <- "False"
+
+# Transfornado o df_res05_shrink em dataframe
+df_res05 <- as.data.frame(res05)
+
+# Ordenando a tabela res05 pelo valor de p-value ajustado
+df_res05 <- df_res05[order(df_res05$padj), ]
+
+# Adicionando a coluna Gene.stable.ID como nome das linhas
+df_res05$Gene.stable.ID <- row.names(df_res05)
+
+# Realizando o merge do df_res05_shrink com genes id homólogos de camundongos
+results2 <- as.data.frame(merge(df_res05, homoBiomart, by='Gene.stable.ID'))
+
+# Removendo dados duplicados da Mouse.gene.stable.ID
+results2 <- distinct(results2, Mouse.gene.stable.ID, .keep_all= TRUE)
+
+### Adicionando as anotações à tabela de results2
+
+# Adicionando o símbolo do gene
+results2$GeneSymbol <- mapIds(x = org.Mm.eg.db,
+                              keys = results$Mouse.gene.stable.ID,
+                              column = "SYMBOL",
+                              keytype = "ENSEMBL",
+                              multiVals = "first")
+
+# Adicionando a descrição do gene
+results2$GeneDescription <- mapIds(org.Mm.eg.db,
+                              keys = results$Mouse.gene.stable.ID,
+                              column = "GENENAME",
+                              keytype = "ENSEMBL",
+                              multiVals = "first")
+
+# Adicionando o ENTREZID
+results2$ENTREZID <- mapIds(org.Mm.eg.db,
+                              keys = results$Mouse.gene.stable.ID,
+                              column = "ENTREZID",
+                              keytype = "ENSEMBL",
+                              multiVals = "first")
+
+
+# Criando uma tabela de resultados significantes
+res_sig2 = as.data.frame(subset(results2, padj< 0.05))
+res_sig2 <- na.omit(res_sig2)
+res_sig2 = res_sig2[order(res_sig2$log2FoldChange, decreasing=TRUE),]
+
+```
+
+
+### Conferindo os resultados com o Volcano Plot
+Visualização dos gene com um p-value ajustado de <1e-50 e log2FoldChange absoluto > 2.
+```{r}
+volcano2 = ggplot(res_sig2, aes(log2FoldChange, -log10(pvalue))) + geom_point(aes(col=significant)) +
+  scale_color_manual(values=c("red", "green"))
+
+volcano2 + geom_text(data=filter(res_sig2, abs(log2FoldChange) > 2 & padj< 1e-50), aes(label=GeneSymbol)) +
+  coord_cartesian(clip = "off")
+
+```
+
+
+## Normalizando os dados e salvando os resultados em um arquivo excel
+
+Com a tabela dos resultados do DESeq2 com as anotações é possível continuar as análises downstream, como as 
+análises de enriquecimento das vias, sem a necessidade de executar o deseq e a anotações gênica novamente.
+
+### readCounts
+```{r}
+## Salvando a tabela readCounts não normalizada
+#write.csv(counts, 'counsts.csv')
+
+# Normalizando as counts
+# norm_counts <- counts(ddsDE, normalized=TRUE)
+
+# Salvando counts normaliadas
+#write.csv(as.data.frame(norm_counts), 'norm_Counts.csv')
+#write.csv(as.data.frame(assay_rld), 'rld_norm_Counts.csv')
+
+```
+
+
+### Resultados DESeq2 shrink
+```{r}
+# Salvando o resultado de deseq2 com p-value de 0,05
+#write.csv(as.data.frame(res05), 'res05.csv')
+
+# Criando uma cópia do df
+df2 <- res_sig2
+
+# Aplicando a função as.character as colunas GeneSymbol, GeneDescription e ENTREZID c(10:12)
+alter_cols2 <- apply(df2[ , c(10:12)], 2, as.character)  # retorna um df com as colunas modificadas
+
+# Substituindo as colunas
+df2[ , colnames(df2) %in% colnames(alter_cols2)] <- alter_cols2  
+
+
+# Salvando os resultados do DESeq2
+# write.csv(as.data.frame(df2), 'results_DESeq2_annotation.csv')
+# writexl::write_xlsx(as.data.frame(df2), 'results_DESeq2_annotation.xlsx')
+# 
+# # Sanvando os resultados DE para e up regulados down regulados 
+# res05_sig_up <- filter(df2, significant == "True" & log2FoldChange > 0)
+# writexl::write_xlsx(as.data.frame(res05_sig_up), 'results_DESeq2_genes_up.xlsx')
+# 
+# res05_sig_down <- filter(df2, significant == "True" & log2FoldChange < 0)
+# writexl::write_xlsx(as.data.frame(res05_sig_down), 'results_DESeq2_genes_down.xlsx')
+
+
+```
+
+
+## Informações da sessão
+
+```{r}
+sessionInfo()
+```
+
+
+
+## Referências
+
+Love, M.I., Huber, W. & Anders, S. Moderated estimation of fold change and dispersion for RNA-seq data with DESeq2. Genome Biol 15, 550 (2014). 
+
+[Paper DESeq2](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-014-0550-8)
+
+[hbctraining DGE_Workshop_lessons](https://hbctraining.github.io/DGE_workshop/lessons/05_DGE_DESeq2_analysis2.html)
+
+[hbctraining DGE_Workshop_salmon](https://hbctraining.github.io/DGE_workshop_salmon_online/lessons/05b_wald_test_results.html)
+
+[Bioconductor vignettes DESeq2](https://bioconductor.org/packages/devel/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#principal-component-plot-of-the-samples)
+
+[Bioconductor vignettes rnaseq](https://www.bioconductor.org/packages/devel/workflows/vignettes/rnaseqGene/inst/doc/rnaseqGene.html)
+
+[Bioconductor course material](https://www.bioconductor.org/help/course-materials/2015/LearnBioconductorFeb2015/B02.1.1_RNASeqLab.html)
+
+[STHDA rna-seq workflow](http://www.sthda.com/english/wiki/rna-seq-differential-expression-work-flow-using-deseq2#diagnostic-plot)
+
+#------------------------------------------------------------------------------------------------------------#
+#                                                   FIM
+#------------------------------------------------------------------------------------------------------------#
+
+
+
+
+
