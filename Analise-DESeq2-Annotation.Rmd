@@ -2,6 +2,7 @@
 title: "Análise de Expressão diferencial de RNA-Seq com DESeq2"
 Autor: Luiz Carlos Vieira
 date: "25/09/2021"
+output: rmarkdown::github_document
 ---
 
 DESeq2, é um método para análise diferencial de dados de contagem, usando estimativa de encolhimento para 
