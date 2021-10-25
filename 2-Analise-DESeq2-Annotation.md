@@ -831,11 +831,11 @@ plotCounts(ddsDE, gene=gene_idx, intgroup="condition")
 
 ![](Analise-DESeq2-Annotation_files/figure-gfm/unnamed-chunk-35-1.png)<!-- -->
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # Agrupamento de Genes e Visualização
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 ## Agrupamento de Genes e Visualização
 
@@ -916,11 +916,11 @@ legend('topright', mylabel, fill=c('green', 'black'))
 
 ![](Analise-DESeq2-Annotation_files/figure-gfm/unnamed-chunk-37-1.png)<!-- -->
 
-# ———————————————————————————————————
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # Anotação Gênica
 
-# ———————————————————————————————————
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 ## Adicionando uma coluna de significância em res05
 
@@ -1206,8 +1206,11 @@ df[ , colnames(df) %in% colnames(alter_cols)] <- alter_cols
 # writexl::write_xlsx(as.data.frame(res05_shrink_sig_down), 'results_DESeq2_shrink_genes_down.xlsx')
 ```
 
-\#————————————————————————————————————\# \# Opcional a critério do
-usuário \#————————————————————————————————————\#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+## Opcional a critério do usuário
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 ``` r
 # Criando coluna de significância
@@ -1419,5 +1422,9 @@ material](https://www.bioconductor.org/help/course-materials/2015/LearnBioconduc
 [STHDA rna-seq
 workflow](http://www.sthda.com/english/wiki/rna-seq-differential-expression-work-flow-using-deseq2#diagnostic-plot)
 
-\#————————————————————————————————————\# \# FIM
-\#————————————————————————————————————\#
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# FIM
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
