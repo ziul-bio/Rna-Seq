@@ -36,4 +36,5 @@ Nesta análise serão usados programas como:
 * Samtools  
 * FeatureCounts  
 * DESeq2  
+* ClusterProfiler
 
