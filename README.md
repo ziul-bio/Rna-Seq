@@ -27,14 +27,16 @@ Com isso, descrevi essa pipeline, não com o intuito de ser a melhor ou a única
 
 Neste projeto descrevo diferentes parâmetros e opções para execução de programas necessários à análise de Rna-Seq, além de incluir informações e opniões, que possam facilitar na hora de escolher a opção que melhor se adque à análise em questão.
 
-Nesta análise serão usados programas como:  
+Etapas da análise:  
 
-* Fastqc e Multiqc  
-* HISAT2  
-* kallisto  
-* RSeQC  
-* Samtools  
-* FeatureCounts  
-* DESeq2  
-* ClusterProfiler
+* [Processamento dos arquivos fastq](https://github.com/ziul-bio/Rna-Seq_Workflow/blob/main/1-RNA-SEQ_pipeline.md)  
+  * Fastqc e Multiqc  
+  * HISAT2  
+  * FeatureCounts  
+
+* [Análise de expressão diferencial](https://github.com/ziul-bio/Rna-Seq_Workflow/blob/main/2-Analise-DESeq2_Annotation.md)  
+  * DESeq2  
+
+* [Análise de enriquecimento funcional de redes gênicas](https://github.com/ziul-bio/Rna-Seq_Workflow/blob/main/3-Analysis-GSEA.md)  
+  * ClusterProfiler
 
