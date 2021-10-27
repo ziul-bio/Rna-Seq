@@ -891,7 +891,6 @@ ggsave(file.path("treeplot_Kegg.png"))
 [rdocumentation-enrichgo](https://www.rdocumentation.org/packages/clusterProfiler/versions/3.0.4/topics/enrichGO)  
 [rdocumentation-enrichkegg](https://www.rdocumentation.org/packages/clusterProfiler/versions/3.0.4/topics/enrichKEGG)  
 [rdocumentation-enrichomics](https://www.bioconductor.org/help/course-materials/2017/BioC2017/Day1/Workshops/OmicsData/doc/enrichOmics.html)  
-[gsea enrichment](https://alexslemonade.github.io/refinebio-examples/03-rnaseq/pathway-analysis_rnaseq_02_gsea.html)  
 
 
 ### Informações da sessão
