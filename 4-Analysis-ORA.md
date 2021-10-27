@@ -39,11 +39,8 @@ library("enrichplot")
 library("cowplot")
 ```
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # Carregando os resultadps do DESeq2
-
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 ``` r
 results <- as.data.frame(read.csv('results_DESeq2_annotation.csv'))
@@ -160,11 +157,8 @@ head(geneList, 10)
     ##    12993    14313 
     ## 3.028177 2.849432
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # Enriquecimento com GO Terms
-
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # Gene Ontology (GO)
 
@@ -626,11 +620,8 @@ ggsave(file.path("treeplot_GO_ALL.png"))
     ## Warning: It is deprecated to specify `guide = FALSE` to remove a guide. Please
     ## use `guide = "none"` instead.
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # Enriquecimento com KEGG database
-
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 ## Enciclopédia de Genes e Genomas de Kyoto (KEGG)
 
