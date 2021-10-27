@@ -7,15 +7,10 @@ usando estimativa de redução da dispersões e alterações de log fold
 chang para melhorar a estabilidade e interpretabilidade das estimativas
 de dispersão dos dados (Love, M.I.., 2014).
 
-# Descrição
-
-Neste notebook, descrevo uma análise dos dados de contagem de RNA-seq,
-com o intuito de detectar genes diferencialmente expressos. Os dados de
-contagem são apresentados em uma matiz com o número de fragmentos de
-sequência contados para cada gene.
-
-Esta matriz foi gerada pelo programa featureCounts, do qual realizou a
-contagem dos fragmentos alinhados com o Hisat2.
+Neste notebook, descrevo uma análise RNA-seq, com o intuito de detectar 
+genes diferencialmente expressos. A matriz com os dados de contagem dos
+fragmentos sequênciados, foi obtida pelo programa featureCounts, do qual
+realizou a contagem dos fragmentos alinhados pelo Hisat2.
 
 Os dados brutos foram retirados de um artigo publicado na cellpress.  
 Título: “Defining lncRNAs Correlated with CHO Cell Growth and IgG
