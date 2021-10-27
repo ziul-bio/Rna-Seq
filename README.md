@@ -37,6 +37,7 @@ Etapas da análise:
 * [Análise de expressão diferencial](https://github.com/ziul-bio/Rna-Seq_Workflow/blob/main/2-Analise-DESeq2_Annotation.md)  
   * DESeq2  
 
-* [Análise de enriquecimento funcional de redes gênicas](https://github.com/ziul-bio/Rna-Seq_Workflow/blob/main/3-Analysis-GSEA.md)  
-  * ClusterProfiler
+* Análise de enriquecimento funcional com ClusterProfiler:  
+  * [Gene Set Enrichmente Analysis - GSEA](https://github.com/ziul-bio/Rna-Seq_Workflow/blob/main/3-Analysis-GSEA.md)  
+  * [Over Representation Analysis - ORA](https://github.com/ziul-bio/Rna-Seq_Workflow/blob/main/4-Analysis-ORA.md)  
 
