@@ -1162,7 +1162,7 @@ log2FoldChange absoluto &gt; 2.
 volcano = ggplot(res_sig, aes(log2FoldChange, -log10(pvalue))) + geom_point(aes(col=significant)) +
   scale_color_manual(values=c("red", "green"))
 
-volcano + geom_text(data=filter(res_sig, abs(log2FoldChange) > 2 & padj <1e-50), aes(label=GeneSymbol)) +
+volcano + geom_text_repel(data=filter(res_sig, abs(log2FoldChange) > 2 & padj <1e-50), aes(label=GeneSymbol)) +
   coord_cartesian(clip = "off")
 ```
 
@@ -1273,7 +1273,7 @@ log2FoldChange absoluto &gt; 2.
 volcano2 = ggplot(res_sig2, aes(log2FoldChange, -log10(pvalue))) + geom_point(aes(col=significant)) +
   scale_color_manual(values=c("red", "green"))
 
-volcano2 + geom_text(data=filter(res_sig2, abs(log2FoldChange) > 3 & padj< 1e-50), aes(label=GeneSymbol)) +
+volcano2 + geom_text_repel(data=filter(res_sig2, abs(log2FoldChange) > 3 & padj< 1e-50), aes(label=GeneSymbol)) +
   coord_cartesian(clip = "off")
 ```
 
