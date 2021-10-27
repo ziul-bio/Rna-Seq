@@ -46,11 +46,8 @@ library("cowplot")
 library("ggplot2")
 ```
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # Carregando os resultadps do DESeq2
-
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 ``` r
 results <- as.data.frame(read.csv('results_DESeq2_shrink.csv'))
@@ -171,11 +168,8 @@ head(geneList, 10)
     ##  Bcl2l12    Cdca8 
     ## 2.664413 2.626854
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # Gene set Enrichment Analysis - GSEA MSigDb
-
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # MSigDb analysis
 
@@ -615,11 +609,8 @@ ridgeplot(gsea_MSigDb) +
 
 ![](Analysis-GSEA_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # Análise de Enriquecimento com GSEAKegg e GSEAGo
-
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 ## Criando uma lista de genes com o entrezid como identificador
 
@@ -642,11 +633,9 @@ head(geneList2, 10)
     ##    75736    52276 
     ## 2.664413 2.626854
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # Enriquecimento com gseaGO
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 ## Criando o abjeto gseGO
 
@@ -890,11 +879,8 @@ treeplot(tree_plot_data,
 
 ![](Analysis-GSEA_files/figure-gfm/unnamed-chunk-30-1.png)<!-- -->
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # Enriquecimento com gseaKegg
-
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 ## Create gseKEGG object
 
