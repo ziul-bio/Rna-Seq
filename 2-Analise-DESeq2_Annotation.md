@@ -15,7 +15,7 @@ realizou a contagem dos fragmentos alinhados pelo Hisat2.
 Os dados brutos foram retirados de um artigo publicado na cellpress.  
 Título: “Defining lncRNAs Correlated with CHO Cell Growth and IgG
 Productivity by RNA-Seq”  
-Autor Davide Vito. [Link]('https://www.sciencedirect.com/science/article/pii/S2589004219305309')
+Autor Davide Vito. [Link](https://www.sciencedirect.com/science/article/pii/S2589004219305309)
 
 ## Importando as bibliotecas
 
