@@ -5,7 +5,7 @@
 </p>
 
 # Luiz Carlos Vieira
-<sub>*Biólogo* Aspirante a analista de dados biológicos / Bioinformáta</sub>
+<sub>*Biólogo* Analista de dados biológicos / Bioinformáta</sub>
 
 Possui graduação em Ciências Biológicas e Mestrado em Ciências pelo Departamento de Biologia Celular e Molecular e Bioagentes Patogênicos.
 Atuou como Técnico de Laboratório (Trainne) e Pesquisador (Mestrando) no Centro de Pesquisas em Virologia (USP).
