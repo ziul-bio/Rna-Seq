@@ -102,6 +102,7 @@ Executando o fastqc e gerando os reports:
 ```bash
 fastqc -t 5 *.fastq # o símbolo * indica todos os arquivos que terminem em .fastq
 ```
+Obs: Com esse comando os reports do fastqc, estarão disponível na mesma pasta onde se encontram os arquivos fastq
 
 Executando o fastqc e movendo os reports para o directório especificado
 ```bash
